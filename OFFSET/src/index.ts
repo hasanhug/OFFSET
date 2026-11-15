@@ -6,8 +6,9 @@ import { Color3, Color4 } from "@babylonjs/core/Maths/math.color";
 import { HemisphericLight } from "@babylonjs/core/Lights/hemisphericLight";
 import { DirectionalLight } from "@babylonjs/core/Lights/directionalLight";
 import { CreateBox } from "@babylonjs/core/Meshes/Builders/boxBuilder";
-import { CreateGround } from "@babylonjs/core/Meshes/Builders/groundBuilder";
 import { CreateSphere } from "@babylonjs/core/Meshes/Builders/sphereBuilder";
+import { createTerrain } from "./terrain";
+import { createGrass } from "./grass";
 import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
 import { createCloudSkyMaterial } from "./cloudSky";
 
@@ -53,11 +54,17 @@ const createScene = () => {
     const skybox = CreateBox("skybox", { size: 1000 }, scene);
     skybox.material = cloudSky;
 
-    // Ground: a large flat plane at y = 0
-    const ground = CreateGround("ground", { width: 100, height: 100 }, scene);
-    const groundMaterial = new StandardMaterial("groundMaterial", scene);
-    groundMaterial.diffuseColor = new Color3(0.42, 0.44, 0.47); // light grey for daytime
-    ground.material = groundMaterial;
+    // Terrain: earthy plain with distant hills, mottled dirt, scattered
+    // dry-grass tufts, and subtle haze towards the horizon
+    // (shapes and materials live in terrain.ts / grass.ts / noise.ts).
+    createTerrain(scene);
+    createGrass(scene);
+
+    // Atmospheric haze: distant ground fades into the sky's horizon colour.
+    scene.fogMode = Scene.FOGMODE_LINEAR;
+    scene.fogStart = 60;
+    scene.fogEnd = 200;
+    scene.fogColor = Color3.FromHexString("#7FB2E8");
 
     // Cube: solid blue, sitting on the ground
     const cube = CreateBox("cube", { size: 2 }, scene);
