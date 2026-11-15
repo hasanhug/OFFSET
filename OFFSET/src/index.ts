@@ -9,6 +9,8 @@ import { CreateBox } from "@babylonjs/core/Meshes/Builders/boxBuilder";
 import { CreateGround } from "@babylonjs/core/Meshes/Builders/groundBuilder";
 import { CreateSphere } from "@babylonjs/core/Meshes/Builders/sphereBuilder";
 import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
+import { Texture } from "@babylonjs/core/Materials/Textures/texture";
+import { CloudProceduralTexture } from "@babylonjs/core/ProceduralTextures/cloudProceduralTexture";
 
 const canvas = document.getElementById("renderCanvas") as HTMLCanvasElement;
 const engine = new Engine(canvas, true);
@@ -37,15 +39,31 @@ const createScene = () => {
 
     // Lighting: soft ambient light + a directional light for definition
     const ambient = new HemisphericLight("ambient", new Vector3(0, 1, 0), scene);
-    ambient.intensity = 0.5;
+    ambient.intensity = 0.8;
 
     const sun = new DirectionalLight("sun", new Vector3(-0.5, -1, -0.5), scene);
-    sun.intensity = 0.8;
+    sun.intensity = 1.0;
+
+    // Sky: procedural clouds on a skybox surrounding the whole scene.
+    // The texture animates on its own (drifting, evolving clouds).
+    const clouds = new CloudProceduralTexture("clouds", 1024, scene);
+    clouds.skyColor = new Color3(0.5, 0.7, 1); // light blue
+    clouds.cloudColor = new Color3(1, 1, 1);   // white
+    clouds.coordinatesMode = Texture.SKYBOX_MODE;
+
+    const skybox = CreateBox("skybox", { size: 1000 }, scene);
+    const skyboxMaterial = new StandardMaterial("skyboxMaterial", scene);
+    skyboxMaterial.backFaceCulling = false;  // the box is viewed from inside
+    skyboxMaterial.disableLighting = true;   // colour comes entirely from the texture
+    skyboxMaterial.diffuseColor = Color3.Black();
+    skyboxMaterial.specularColor = Color3.Black();
+    skyboxMaterial.reflectionTexture = clouds;
+    skybox.material = skyboxMaterial;
 
     // Ground: a large flat plane at y = 0
     const ground = CreateGround("ground", { width: 100, height: 100 }, scene);
     const groundMaterial = new StandardMaterial("groundMaterial", scene);
-    groundMaterial.diffuseColor = new Color3(0.2, 0.21, 0.24);
+    groundMaterial.diffuseColor = new Color3(0.42, 0.44, 0.47); // light grey for daytime
     ground.material = groundMaterial;
 
     // Cube: solid blue, sitting on the ground
