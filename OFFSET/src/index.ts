@@ -1,0 +1,68 @@
+import { Engine } from "@babylonjs/core/Engines/engine";
+import { Scene } from "@babylonjs/core/scene";
+import { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
+import { Vector3 } from "@babylonjs/core/Maths/math.vector";
+import { Color3, Color4 } from "@babylonjs/core/Maths/math.color";
+import { HemisphericLight } from "@babylonjs/core/Lights/hemisphericLight";
+import { DirectionalLight } from "@babylonjs/core/Lights/directionalLight";
+import { CreateBox } from "@babylonjs/core/Meshes/Builders/boxBuilder";
+import { CreateGround } from "@babylonjs/core/Meshes/Builders/groundBuilder";
+import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
+
+const canvas = document.getElementById("renderCanvas") as HTMLCanvasElement;
+const engine = new Engine(canvas, true);
+
+const createScene = () => {
+    const scene = new Scene(engine);
+
+    // Dark navy background, fully opaque (#101827)
+    scene.clearColor = Color4.FromHexString("#101827FF");
+
+    // Camera: orbits a fixed point, controlled with the mouse
+    // (drag = rotate, wheel = zoom)
+    const camera = new ArcRotateCamera(
+        "camera",
+        -Math.PI / 2, // alpha: horizontal angle
+        Math.PI / 3,  // beta: vertical angle
+        10,           // radius: distance from the target
+        new Vector3(0, 1, 0), // look at the cube's centre
+        scene,
+    );
+    camera.attachControl(canvas, true);
+    camera.lowerRadiusLimit = 4;
+    camera.upperRadiusLimit = 25;
+    camera.upperBetaLimit = Math.PI / 2 - 0.05; // never go below the ground
+    camera.panningSensibility = 0; // keep the cube centred
+
+    // Lighting: soft ambient light + a directional light for definition
+    const ambient = new HemisphericLight("ambient", new Vector3(0, 1, 0), scene);
+    ambient.intensity = 0.5;
+
+    const sun = new DirectionalLight("sun", new Vector3(-0.5, -1, -0.5), scene);
+    sun.intensity = 0.8;
+
+    // Ground: a large flat plane at y = 0
+    const ground = CreateGround("ground", { width: 100, height: 100 }, scene);
+    const groundMaterial = new StandardMaterial("groundMaterial", scene);
+    groundMaterial.diffuseColor = new Color3(0.2, 0.21, 0.24);
+    ground.material = groundMaterial;
+
+    // Cube: solid blue, sitting on the ground
+    const cube = CreateBox("cube", { size: 2 }, scene);
+    cube.position.y = 1; // half its height, so its base rests on the ground
+    const cubeMaterial = new StandardMaterial("cubeMaterial", scene);
+    cubeMaterial.diffuseColor = new Color3(0.2, 0.45, 0.95); // blue
+    cube.material = cubeMaterial;
+
+    return scene;
+};
+
+const scene = createScene();
+
+engine.runRenderLoop(() => {
+    scene.render();
+});
+
+window.addEventListener("resize", () => {
+    engine.resize();
+});
