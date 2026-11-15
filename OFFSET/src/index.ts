@@ -7,6 +7,7 @@ import { HemisphericLight } from "@babylonjs/core/Lights/hemisphericLight";
 import { DirectionalLight } from "@babylonjs/core/Lights/directionalLight";
 import { CreateBox } from "@babylonjs/core/Meshes/Builders/boxBuilder";
 import { CreateGround } from "@babylonjs/core/Meshes/Builders/groundBuilder";
+import { CreateSphere } from "@babylonjs/core/Meshes/Builders/sphereBuilder";
 import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
 
 const canvas = document.getElementById("renderCanvas") as HTMLCanvasElement;
@@ -53,6 +54,14 @@ const createScene = () => {
     const cubeMaterial = new StandardMaterial("cubeMaterial", scene);
     cubeMaterial.diffuseColor = new Color3(0.2, 0.45, 0.95); // blue
     cube.material = cubeMaterial;
+
+    // Sphere: solid red, resting on the ground to the right of the cube
+    const sphere = CreateSphere("sphere", { diameter: 2 }, scene);
+    sphere.position.x = 3; // 1 unit of gap between cube and sphere
+    sphere.position.y = 1; // its radius, so it rests on the ground
+    const sphereMaterial = new StandardMaterial("sphereMaterial", scene);
+    sphereMaterial.diffuseColor = new Color3(0.9, 0.2, 0.2); // red
+    sphere.material = sphereMaterial;
 
     return scene;
 };
