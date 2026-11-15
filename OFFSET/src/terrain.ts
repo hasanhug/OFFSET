@@ -12,10 +12,18 @@ import { fbm2, fbmTile, lerp, smoothstep } from "./noise";
 /** World-space size of the terrain square. */
 export const TERRAIN_SIZE = 300;
 
+/** Smooth rounded dome profile: 1 at the centre, 0 at `radius` distance. */
+const smoothDome = (distance: number, radius: number): number => {
+    const t = Math.min(distance / radius, 1);
+    return (Math.cos(t * Math.PI) + 1) / 2;
+};
+
 /**
- * Height of the terrain at world (x, z). Matches the reference photo:
- * a near-flat arid plain with gentle swells, and low rounded hills only
- * far away towards the edges of the map.
+ * Height of the terrain at world (x, z). Matches the reference photo
+ * (Terrain.jpg) seen from the default camera: a rolling grassland plain
+ * with a large dome hill closing the horizon at +Z, a small knoll and a
+ * shallow valley on the near side, and soft swells everywhere — no
+ * shrubs, no trees, just clean turf.
  */
 export const terrainHeight = (x: number, z: number): number => {
     const r = Math.hypot(x, z);
@@ -23,19 +31,24 @@ export const terrainHeight = (x: number, z: number): number => {
     // The play area (cube, sphere, camera orbit) stays perfectly level at 0.
     const flat = 1 - smoothstep(18, 45, r);
 
-    // Subtle mid-ground undulations, roughly ±0.6 units.
-    const swells = (fbm2(x * 0.02, z * 0.02, 4, 11) - 0.5) * 1.2;
+    // Soft wave-like swells across the whole plain (roughly ±0.8 units).
+    const swells = (fbm2(x * 0.02, z * 0.02, 4, 11) - 0.5) * 1.6;
 
-    // Low, rounded hills rising towards the map edge, noise-modulated so
-    // the ridge is not a perfect ring.
-    const hillsRamp = smoothstep(70, 145, r);
-    const hills = hillsRamp * (7 + 9 * fbm2(x * 0.012, z * 0.012, 4, 77)
-                                  + 2.5 * fbm2(x * 0.05, z * 0.05, 3, 123));
+    // The big background dome hill: rounded profile with a noise-modulated
+    // crest so the ridge is organic rather than a perfect cap.
+    const dome = smoothDome(Math.hypot(x - 10, z - 118), 82) * 27
+               * (0.8 + 0.4 * fbm2(x * 0.015, z * 0.015, 4, 77));
 
-    return (swells + hills) * (1 - flat);
+    // Small rounded knoll on the near side of the plain.
+    const knoll = smoothDome(Math.hypot(x - 32, z + 44), 16) * 4;
+
+    // Broad, shallow valley dip.
+    const valley = smoothDome(Math.hypot(x - 48, z - 38), 42) * 3;
+
+    return (swells + dome + knoll - valley) * (1 - flat);
 };
 
-/** Displaced ground mesh with mottled dirt-and-straw material. */
+/** Displaced ground mesh with the velvet grass-turf material. */
 export const createTerrain = (scene: Scene): Mesh => {
     const ground = CreateGround("terrain", {
         width: TERRAIN_SIZE,
@@ -57,18 +70,19 @@ export const createTerrain = (scene: Scene): Mesh => {
     VertexData.ComputeNormals(positions, indices, normals);
     ground.setVerticesData(VertexBuffer.NormalKind, normals);
 
-    ground.material = createDirtMaterial(scene);
+    ground.material = createTurfMaterial(scene);
     return ground;
 };
 
 /**
- * Mottled dirt material from the reference palette — no image files, the
+ * Velvet grass turf from the reference palette — no image files: the
  * texture is painted once into a DynamicTexture with the same tileable
- * fractal noise used everywhere else.
+ * fractal noise used everywhere else. A single material; light and shadow
+ * do the modelling, exactly like the photo.
  */
-const createDirtMaterial = (scene: Scene): StandardMaterial => {
+const createTurfMaterial = (scene: Scene): StandardMaterial => {
     const size = 512;
-    const texture = new DynamicTexture("dirtTexture", { width: size, height: size }, scene, true);
+    const texture = new DynamicTexture("grassTurfTexture", { width: size, height: size }, scene, true);
     const ctx = texture.getContext() as unknown as CanvasRenderingContext2D;
 
     const image = ctx.createImageData(size, size);
@@ -79,28 +93,27 @@ const createDirtMaterial = (scene: Scene): StandardMaterial => {
         for (let px = 0; px < size; px++) {
             const u = px / size;
 
-            // Large tonal mottling of the bare dirt itself.
+            // Large tonal mottling: vivid green with darker "depressions".
             const mottle = fbmTile(u, v, 3, 4, 101);
-            // Where the dry-grass patches grow (straw tones).
+            // Where the turf catches a slightly yellower, sunlit tint.
             const patches = fbmTile(u, v, 5, 4, 202);
             // Fine grain and slow moisture variation.
             const grain = fbmTile(u, v, 32, 2, 303);
             const moisture = fbmTile(u, v, 2, 3, 404);
 
-            // Bare dirt: warm light brown in sun, deeper brown in the mottling.
-            let r = lerp(185, 165, mottle); // #B98D62 → #A5764F
-            let g = lerp(141, 118, mottle);
-            let b = lerp(98, 79, mottle);
+            // Base turf: #7FB83A ↔ #5B9630.
+            let r = lerp(127, 91, mottle);
+            let g = lerp(184, 150, mottle);
+            let b = lerp(58, 48, mottle);
 
-            // Blend straw-coloured patches where the patch noise is high.
-            const patchAmount = smoothstep(0.52, 0.72, patches) * 0.85;
-            const straw = fbmTile(u, v, 9, 3, 505); // mix of two straw tones
-            r = lerp(r, lerp(201, 217, straw), patchAmount); // #C9A05C → #D9B878
-            g = lerp(g, lerp(160, 184, straw), patchAmount);
-            b = lerp(b, lerp(92, 120, straw), patchAmount);
+            // Subtle sunlit yellow-green patches: #A8C93A.
+            const patchAmount = smoothstep(0.52, 0.72, patches) * 0.45;
+            r = lerp(r, 168, patchAmount);
+            g = lerp(g, 201, patchAmount);
+            b = lerp(b, 58, patchAmount);
 
             // Grain + moisture brightness variation.
-            const shade = (0.92 + 0.12 * moisture) * (1 + (grain - 0.5) * 0.14);
+            const shade = (0.92 + 0.12 * moisture) * (1 + (grain - 0.5) * 0.10);
 
             const i = (py * size + px) * 4;
             data[i] = Math.min(255, r * shade);
@@ -118,8 +131,8 @@ const createDirtMaterial = (scene: Scene): StandardMaterial => {
     texture.uScale = 24;
     texture.vScale = 24;
 
-    const material = new StandardMaterial("dirtMaterial", scene);
+    const material = new StandardMaterial("turfMaterial", scene);
     material.diffuseTexture = texture;
-    material.specularColor = Color3.Black(); // dry earth is completely matte
+    material.specularColor = Color3.Black(); // short grass is matte
     return material;
 };

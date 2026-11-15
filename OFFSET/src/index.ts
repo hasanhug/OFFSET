@@ -8,7 +8,6 @@ import { DirectionalLight } from "@babylonjs/core/Lights/directionalLight";
 import { CreateBox } from "@babylonjs/core/Meshes/Builders/boxBuilder";
 import { CreateSphere } from "@babylonjs/core/Meshes/Builders/sphereBuilder";
 import { createTerrain } from "./terrain";
-import { createGrass } from "./grass";
 import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
 import { createCloudSkyMaterial } from "./cloudSky";
 
@@ -54,11 +53,10 @@ const createScene = () => {
     const skybox = CreateBox("skybox", { size: 1000 }, scene);
     skybox.material = cloudSky;
 
-    // Terrain: earthy plain with distant hills, mottled dirt, scattered
-    // dry-grass tufts, and subtle haze towards the horizon
-    // (shapes and materials live in terrain.ts / grass.ts / noise.ts).
+    // Terrain: rolling grassland from the reference photo — a plain with a
+    // big dome hill on the horizon, smooth velvet turf, no vegetation
+    // (heights and material live in terrain.ts / noise.ts).
     createTerrain(scene);
-    createGrass(scene);
 
     // Atmospheric haze: distant ground fades into the sky's horizon colour.
     scene.fogMode = Scene.FOGMODE_LINEAR;
