@@ -10,7 +10,7 @@ import { CreateGround } from "@babylonjs/core/Meshes/Builders/groundBuilder";
 import { CreateSphere } from "@babylonjs/core/Meshes/Builders/sphereBuilder";
 import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
 import { Texture } from "@babylonjs/core/Materials/Textures/texture";
-import { CloudProceduralTexture } from "@babylonjs/core/ProceduralTextures/cloudProceduralTexture";
+import { CloudProceduralTexture } from "@babylonjs/procedural-textures/cloud/cloudProceduralTexture";
 
 const canvas = document.getElementById("renderCanvas") as HTMLCanvasElement;
 const engine = new Engine(canvas, true);
@@ -18,8 +18,8 @@ const engine = new Engine(canvas, true);
 const createScene = () => {
     const scene = new Scene(engine);
 
-    // Dark navy background, fully opaque (#101827)
-    scene.clearColor = Color4.FromHexString("#101827FF");
+    // Midday blue background, fully opaque (#4A90D9) — matches the skybox
+    scene.clearColor = Color4.FromHexString("#4A90D9FF");
 
     // Camera: orbits a fixed point, controlled with the mouse
     // (drag = rotate, wheel = zoom)
@@ -47,8 +47,8 @@ const createScene = () => {
     // Sky: procedural clouds on a skybox surrounding the whole scene.
     // The texture animates on its own (drifting, evolving clouds).
     const clouds = new CloudProceduralTexture("clouds", 1024, scene);
-    clouds.skyColor = new Color3(0.5, 0.7, 1); // light blue
-    clouds.cloudColor = new Color3(1, 1, 1);   // white
+    clouds.skyColor = new Color4(0.29, 0.56, 0.85, 1); // bright midday blue
+    clouds.cloudColor = new Color4(1, 1, 1, 1);        // white
     clouds.coordinatesMode = Texture.SKYBOX_MODE;
 
     const skybox = CreateBox("skybox", { size: 1000 }, scene);
