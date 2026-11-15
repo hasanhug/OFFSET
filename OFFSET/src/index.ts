@@ -7,6 +7,7 @@ import { HemisphericLight } from "@babylonjs/core/Lights/hemisphericLight";
 import { DirectionalLight } from "@babylonjs/core/Lights/directionalLight";
 import { CreateBox } from "@babylonjs/core/Meshes/Builders/boxBuilder";
 import { createTerrain } from "./terrain";
+import { createAgent } from "./agent";
 import { createCloudSkyMaterial } from "./cloudSky";
 
 const canvas = document.getElementById("renderCanvas") as HTMLCanvasElement;
@@ -24,8 +25,8 @@ const createScene = () => {
         "camera",
         -Math.PI / 2, // alpha: horizontal angle
         Math.PI / 3,  // beta: vertical angle
-        10,           // radius: distance from the target
-        new Vector3(0, 1, 0), // a point just above the centre of the plain
+        6,            // radius: distance from the target
+        new Vector3(0, 1, 0), // Agent Jones' chest — the camera orbits him
         scene,
     );
     camera.attachControl(canvas, true);
@@ -61,6 +62,11 @@ const createScene = () => {
     scene.fogStart = 60;
     scene.fogEnd = 200;
     scene.fogColor = Color3.FromHexString("#7FB2E8");
+
+    // Agent Jones: the hooded wanderer from the reference image, standing
+    // at the centre of the plain facing the camera (built and animated in
+    // agent.ts / agentTextures.ts).
+    createAgent(scene);
 
     return scene;
 };
