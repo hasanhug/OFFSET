@@ -7,7 +7,7 @@ import { HemisphericLight } from "@babylonjs/core/Lights/hemisphericLight";
 import { DirectionalLight } from "@babylonjs/core/Lights/directionalLight";
 import { CreateBox } from "@babylonjs/core/Meshes/Builders/boxBuilder";
 import { createTerrain } from "./terrain";
-import { createAgent } from "./agent";
+import { createPlayer } from "./player";
 import { createCloudSkyMaterial } from "./cloudSky";
 
 const canvas = document.getElementById("renderCanvas") as HTMLCanvasElement;
@@ -63,10 +63,10 @@ const createScene = () => {
     scene.fogEnd = 200;
     scene.fogColor = Color3.FromHexString("#7FB2E8");
 
-    // Agent Jones: the hooded wanderer from the reference image, standing
-    // at the centre of the plain facing the camera (built and animated in
-    // agent.ts / agentTextures.ts).
-    createAgent(scene);
+    // Player: the imported GLB character model ("public/models/Agent
+    // Jones.glb") with its original materials, wired to WASD/arrow-key
+    // movement, terrain ground detection and camera follow (player.ts).
+    createPlayer(scene, camera);
 
     return scene;
 };
