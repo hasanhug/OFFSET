@@ -9,8 +9,7 @@ import { CreateBox } from "@babylonjs/core/Meshes/Builders/boxBuilder";
 import { CreateGround } from "@babylonjs/core/Meshes/Builders/groundBuilder";
 import { CreateSphere } from "@babylonjs/core/Meshes/Builders/sphereBuilder";
 import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
-import { Texture } from "@babylonjs/core/Materials/Textures/texture";
-import { CloudProceduralTexture } from "@babylonjs/procedural-textures/cloud/cloudProceduralTexture";
+import { createCloudSkyMaterial } from "./cloudSky";
 
 const canvas = document.getElementById("renderCanvas") as HTMLCanvasElement;
 const engine = new Engine(canvas, true);
@@ -18,8 +17,8 @@ const engine = new Engine(canvas, true);
 const createScene = () => {
     const scene = new Scene(engine);
 
-    // Midday blue background, fully opaque (#4A90D9) — matches the skybox
-    scene.clearColor = Color4.FromHexString("#4A90D9FF");
+    // Deep azure background, fully opaque (#2B6CD4) — matches the sky shader
+    scene.clearColor = Color4.FromHexString("#2B6CD4FF");
 
     // Camera: orbits a fixed point, controlled with the mouse
     // (drag = rotate, wheel = zoom)
@@ -44,21 +43,15 @@ const createScene = () => {
     const sun = new DirectionalLight("sun", new Vector3(-0.5, -1, -0.5), scene);
     sun.intensity = 1.0;
 
-    // Sky: procedural clouds on a skybox surrounding the whole scene.
-    // The texture animates on its own (drifting, evolving clouds).
-    const clouds = new CloudProceduralTexture("clouds", 1024, scene);
-    clouds.skyColor = new Color4(0.29, 0.56, 0.85, 1); // bright midday blue
-    clouds.cloudColor = new Color4(1, 1, 1, 1);        // white
-    clouds.coordinatesMode = Texture.SKYBOX_MODE;
+    // Sky: custom shader on a skybox surrounding the whole scene — a deep
+    // azure gradient with slowly drifting, softly shaded fractal clouds.
+    const cloudSky = createCloudSkyMaterial(scene);
+    scene.onBeforeRenderObservable.add(() => {
+        cloudSky.setFloat("time", performance.now() * 0.001); // wind drift
+    });
 
     const skybox = CreateBox("skybox", { size: 1000 }, scene);
-    const skyboxMaterial = new StandardMaterial("skyboxMaterial", scene);
-    skyboxMaterial.backFaceCulling = false;  // the box is viewed from inside
-    skyboxMaterial.disableLighting = true;   // colour comes entirely from the texture
-    skyboxMaterial.diffuseColor = Color3.Black();
-    skyboxMaterial.specularColor = Color3.Black();
-    skyboxMaterial.reflectionTexture = clouds;
-    skybox.material = skyboxMaterial;
+    skybox.material = cloudSky;
 
     // Ground: a large flat plane at y = 0
     const ground = CreateGround("ground", { width: 100, height: 100 }, scene);
